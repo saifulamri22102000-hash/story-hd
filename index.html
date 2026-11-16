@@ -10,7 +10,25 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="splash" aria-hidden="true"><img src="icon.svg" alt="" width="96" height="96"><b>Story HD</b></div>
+<div id="splash" aria-hidden="true">
+  <svg viewBox="0 0 512 512" width="120" height="120">
+    <defs>
+      <linearGradient id="sbg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#3cf08a"/><stop offset=".55" stop-color="#12b886"/><stop offset="1" stop-color="#1c7ed6"/>
+      </linearGradient>
+    </defs>
+    <rect class="lg-bg" width="512" height="512" rx="116" fill="url(#sbg)"/>
+    <circle class="lg-ring" cx="256" cy="256" r="150" fill="none" stroke="#fff" stroke-width="26" stroke-linecap="round" stroke-dasharray="205 30.6"/>
+    <circle class="lg-core" cx="256" cy="256" r="104" fill="#0b141a"/>
+    <path class="lg-play" d="M228 204 L316 256 L228 308 Z" fill="#fff" stroke="#fff" stroke-width="14" stroke-linejoin="round"/>
+    <g class="lg-badge">
+      <rect x="318" y="330" width="146" height="88" rx="26" fill="#0b141a" stroke="#3cf08a" stroke-width="6"/>
+      <text x="391" y="393" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="800" font-size="56" fill="#3cf08a">HD</text>
+    </g>
+    <path class="lg-spark" d="M112 84l10 26 26 10-26 10-10 26-10-26-26-10 26-10z" fill="#fff"/>
+  </svg>
+  <b>Story HD</b>
+</div>
 <main>
   <header>
     <img src="icon.svg" alt="" width="44" height="44">
@@ -70,6 +88,17 @@
     <input type="file" id="musicInput" accept="audio/*" hidden>
     <input type="file" id="musicVidInput" accept="video/*" hidden>
     <p class="hint">Lagu dari TikTok atau aplikasi lain: simpan videonya ke galeri dulu, lalu pilih lewat “Ambil suara dari video”.</p>
+    <div id="songSearch">
+      <h3>Cari &amp; pilih lagu gratis</h3>
+      <form id="songForm" class="search" role="search">
+        <input type="search" id="songQuery" placeholder="Judul, suasana, atau genre…" aria-label="Cari lagu" enterkeyhint="search" autocomplete="off">
+        <button type="submit" class="chip on">Cari</button>
+      </form>
+      <div class="chips" id="songMoods"></div>
+      <p class="hint" id="songStatus" role="status">Lagu bebas pakai dari Jamendo, tanpa akun. Kata kunci bahasa Inggris memberi hasil lebih banyak.</p>
+      <div id="songList"></div>
+      <button type="button" class="secondary" id="songMore" hidden>Muat lagi</button>
+    </div>
     <details id="trend">
       <summary>🔥 Lagu yang lagi tren</summary>
       <p class="hint">Tangga lagu teratas Indonesia saat ini. Ketuk TikTok atau YouTube untuk membuka lagunya di sana.</p>
@@ -80,7 +109,11 @@
       </p>
     </details>
     <div id="musicOpts" hidden>
-      <p class="hint" id="musicName"></p>
+      <p class="hint now"><span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span id="musicName"></span></p>
+      <div id="creditRow" hidden>
+        <p class="hint" id="musicCredit"></p>
+        <button type="button" class="chip" id="creditBtn">Tambah kredit ke teks status</button>
+      </div>
       <audio id="musicPreview" controls></audio>
       <div class="row">
         <label for="musicStart">Lagu mulai dari (detik)</label>

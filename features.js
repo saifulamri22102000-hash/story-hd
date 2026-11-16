@@ -434,3 +434,196 @@ $('subWords').addEventListener('change', resplitSubs);
 ['subFont', 'subEffect', 'subSize', 'subColor', 'subOutline', 'subHi', 'subBox', 'subUpper']
   .forEach((id) => $(id).addEventListener('input', updateSubPreview));
 updateSubPreview();
+
+/* ---------- free song search (Jamendo catalogue via Openverse) ---------- */
+
+const SONG_API = 'https://api.openverse.org/v1/audio/';
+// No-derivatives licences are left out: putting a song under a video is a derivative.
+const SONG_LICENSES = 'by,by-sa,by-nc,by-nc-sa,cc0,pdm';
+const MOODS = [
+  ['Ceria', 'happy upbeat'], ['Santai', 'chill'], ['Sedih', 'sad piano'],
+  ['Romantis', 'romantic'], ['Semangat', 'energetic'], ['Lo-fi', 'lofi'],
+  ['Akustik', 'acoustic guitar'], ['Sinematik', 'cinematic'],
+  ['Elektronik', 'electronic dance'], ['Hip-hop', 'hip hop beat'],
+];
+const song = { query: '', page: 0, busy: false };
+
+function togglePreview(btn, url) {
+  if (trendPlaying === btn) {
+    stopTrendPreview();
+    return;
+  }
+  stopTrendPreview();
+  trendAudio.src = url;
+  trendAudio.play().catch(() => stopTrendPreview());
+  trendPlaying = btn;
+  btn.textContent = '⏸ Berhenti';
+  btn.classList.add('on');
+}
+
+function licenseLabel(r) {
+  if (r.license === 'cc0') return 'CC0';
+  if (r.license === 'pdm') return 'Domain publik';
+  return ('CC ' + r.license + ' ' + (r.license_version || '')).toUpperCase().trim();
+}
+
+function songRow(r, i) {
+  const url = httpsOnly(r.url);
+  const row = el('div', 'trend-row song-row');
+  row.style.animationDelay = Math.min(i, 12) * 30 + 'ms';
+  const img = el('img');
+  img.alt = '';
+  img.loading = 'lazy';
+  const thumb = httpsOnly(r.thumbnail);
+  if (thumb) img.src = thumb;
+  img.addEventListener('error', () => { img.removeAttribute('src'); });
+  row.appendChild(img);
+  const info = el('div');
+  info.appendChild(el('div', 't', r.title || 'Tanpa judul'));
+  const secs = Math.round((r.duration || 0) / 1000);
+  const meta = [r.creator, secs ? fmtClock(secs).replace(/\.\d$/, '') : '', licenseLabel(r)];
+  info.appendChild(el('div', 'a', meta.filter(Boolean).join(' · ')));
+  row.appendChild(info);
+  const acts = el('div', 'acts');
+  const play = el('button', 'chip', '▶ Dengar');
+  play.type = 'button';
+  play.addEventListener('click', () => togglePreview(play, url));
+  const use = el('button', 'chip on', '＋ Pakai lagu ini');
+  use.type = 'button';
+  use.addEventListener('click', () => useSong(r, use));
+  acts.appendChild(play);
+  acts.appendChild(use);
+  row.appendChild(acts);
+  return row;
+}
+
+async function searchSongs(query, more) {
+  if (song.busy || !query) return;
+  song.busy = true;
+  const page = more ? song.page + 1 : 1;
+  if (!more) {
+    stopTrendPreview();
+    $('songList').textContent = '';
+    $('songMore').hidden = true;
+  }
+  $('songStatus').textContent = 'Mencari…';
+  try {
+    const url = `${SONG_API}?q=${encodeURIComponent(query)}&source=jamendo` +
+      `&license=${SONG_LICENSES}&page_size=12&page=${page}`;
+    const res = await fetch(url);
+    if (res.status === 429) throw new Error('Batas pencarian tercapai. Coba lagi beberapa saat.');
+    if (!res.ok) throw new Error('Pencarian gagal (' + res.status + ').');
+    const data = await res.json();
+    const results = (data.results || []).filter((r) => httpsOnly(r.url));
+    const offset = $('songList').children.length;
+    results.forEach((r, i) => $('songList').appendChild(songRow(r, offset + i)));
+    song.query = query;
+    song.page = page;
+    $('songMore').hidden = page >= (data.page_count || 1);
+    $('songStatus').textContent = $('songList').children.length
+      ? `Hasil untuk “${query}”. Dengar dulu, lalu ketuk “Pakai lagu ini”.`
+      : `Tidak ada hasil untuk “${query}”. Coba kata lain atau bahasa Inggris.`;
+  } catch (err) {
+    console.error(err);
+    $('songStatus').textContent = err instanceof TypeError
+      ? 'Tidak bisa terhubung. Periksa internet.'
+      : err.message;
+  } finally {
+    song.busy = false;
+  }
+}
+
+async function useSong(r, btn) {
+  if (btn.disabled) return;
+  btn.disabled = true;
+  stopTrendPreview();
+  try {
+    const res = await fetch(httpsOnly(r.url));
+    if (!res.ok || !res.body) throw new Error('unduh gagal');
+    const total = +res.headers.get('Content-Length') || 0;
+    const reader = res.body.getReader();
+    const parts = [];
+    let got = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      parts.push(value);
+      got += value.length;
+      btn.textContent = total ? `Mengunduh ${Math.round((got / total) * 100)}%` : 'Mengunduh…';
+    }
+    const safe = (r.title || 'lagu').replace(/[^\w\- ]+/g, '').trim().slice(0, 40) || 'lagu';
+    const file = new File(parts, safe + '.mp3', { type: 'audio/mpeg' });
+    const credit = `♪ “${r.title || 'Tanpa judul'}” oleh ${r.creator || 'tak dikenal'} ` +
+      `(${licenseLabel(r)}) via Jamendo`;
+    setMusic(file, r.license === 'cc0' || r.license === 'pdm' ? '' : credit);
+    btn.textContent = '✓ Dipakai';
+    $('musicOpts').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  } catch (err) {
+    console.error(err);
+    btn.textContent = 'Gagal, coba lagi';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+MOODS.forEach(([label, query]) => {
+  const chip = el('button', 'chip', label);
+  chip.type = 'button';
+  chip.addEventListener('click', () => {
+    $('songQuery').value = label;
+    searchSongs(query, false);
+  });
+  $('songMoods').appendChild(chip);
+});
+$('songForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  searchSongs($('songQuery').value.trim(), false);
+});
+$('songMore').addEventListener('click', () => searchSongs(song.query, true));
+$('creditBtn').addEventListener('click', () => {
+  if (!state.musicCredit) return;
+  const box = $('caption');
+  if (!box.value.includes(state.musicCredit)) {
+    box.value = (box.value.trim() ? box.value.trim() + '\n' : '') + state.musicCredit;
+  }
+  $('creditBtn').textContent = '✓ Kredit ditambahkan';
+});
+
+/* ---------- motion extras ---------- */
+
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+document.addEventListener('pointerdown', (e) => {
+  if (reducedMotion.matches || !(e.target instanceof Element)) return;
+  const host = e.target.closest('.primary, .secondary, .pick, .chip');
+  if (!host || host.disabled) return;
+  const box = host.getBoundingClientRect();
+  const d = Math.max(box.width, box.height);
+  const dot = el('span', 'ripple');
+  dot.style.width = dot.style.height = d + 'px';
+  dot.style.left = e.clientX - box.left - d / 2 + 'px';
+  dot.style.top = e.clientY - box.top - d / 2 + 'px';
+  host.appendChild(dot);
+  dot.addEventListener('animationend', () => dot.remove());
+});
+
+function confetti(host) {
+  if (reducedMotion.matches) return;
+  const colors = ['#25d366', '#34b7f1', '#ffe600', '#ff6b9d', '#ffffff'];
+  const layer = el('div', 'confetti');
+  for (let i = 0; i < 30; i++) {
+    const bit = el('i');
+    bit.style.setProperty('--x', (Math.random() * 2 - 1) * 170 + 'px');
+    bit.style.setProperty('--y', -(40 + Math.random() * 170) + 'px');
+    bit.style.setProperty('--r', (Math.random() * 720 - 360) + 'deg');
+    bit.style.background = colors[i % colors.length];
+    bit.style.animationDelay = Math.random() * 120 + 'ms';
+    layer.appendChild(bit);
+  }
+  host.appendChild(layer);
+  setTimeout(() => layer.remove(), 1800);
+}
+
+new MutationObserver(() => {
+  if (!$('resultCard').hidden) confetti($('resultCard'));
+}).observe($('resultCard'), { attributes: true, attributeFilter: ['hidden'] });

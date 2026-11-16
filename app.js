@@ -547,8 +547,11 @@ function setMedia(file) {
   syncMusicUi();
 }
 
-function setMusic(file) {
+function setMusic(file, credit) {
   const audio = $('musicPreview');
+  state.musicCredit = (file && credit) || '';
+  $('musicCredit').textContent = state.musicCredit;
+  $('creditRow').hidden = !state.musicCredit;
   if (audio.dataset.url) URL.revokeObjectURL(audio.dataset.url);
   state.music = file || null;
   if (file) {
