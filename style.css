@@ -441,6 +441,20 @@ details[open] summary { color: var(--pink); }
   color: var(--text); animation: rise .3s both; line-height: 2;
 }
 .guide .chip { animation: none; vertical-align: middle; }
+.capcut { background: linear-gradient(135deg, rgba(255, 78, 205, .09), rgba(139, 92, 246, .07)); animation-delay: 2s; }
+.capcut ol { margin: 0 0 6px; padding-left: 22px; color: var(--muted); font-size: .9rem; }
+.capcut li { margin: 6px 0; }
+.capcut b { color: var(--text); }
+#toast {
+  position: fixed; left: 50%; bottom: 22px; z-index: 20; transform: translateX(-50%);
+  width: max-content; max-width: calc(100vw - 32px);
+  padding: 12px 18px; border-radius: 16px; font-weight: 600; font-size: .9rem;
+  color: #fff; background: rgba(20, 18, 40, .92); border: 1px solid var(--pink);
+  box-shadow: 0 10px 34px rgba(255, 78, 205, .35);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  animation: toastIn .35s cubic-bezier(.2, 1.3, .4, 1) both;
+}
+@keyframes toastIn { from { opacity: 0; transform: translate(-50%, 24px) scale(.94); } }
 .seg { display: inline-flex; gap: 6px; padding: 4px; border-radius: 99px; background: var(--field); border: 1px solid var(--line); }
 .seg .chip { border-color: transparent; background: transparent; animation: none; }
 .seg .chip.on { background: var(--grad); }

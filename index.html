@@ -7,6 +7,7 @@
 <title>Story HD</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -286,6 +287,19 @@
     <p class="hint" id="shareHint" hidden>Browser ini tidak bisa berbagi file langsung. Simpan dulu, lalu pilih dari galeri di WhatsApp.</p>
   </section>
 
+  <section class="card capcut">
+    <h2><span>✂️</span> Dari CapCut langsung ke sini</h2>
+    <ol>
+      <li>Pasang Story HD di HP (sekali saja).</li>
+      <li>Selesai edit di CapCut → <b>Ekspor</b>.</li>
+      <li>Di layar selesai ekspor ketuk <b>Lainnya</b> (atau buka videonya di Galeri → <b>Bagikan</b>).</li>
+      <li>Pilih <b>Story HD</b>. Video langsung terbuka di sini dengan efek Jernih HD.</li>
+    </ol>
+    <button type="button" class="primary" id="installBtn" hidden>📲 Pasang Story HD</button>
+    <p class="hint" id="installDone" hidden>✓ Sudah terpasang. Story HD ada di menu Bagikan HP-mu.</p>
+    <p class="hint">Tombol pasang tidak muncul? Di Chrome Android: menu ⋮ → <b>Tambahkan ke layar utama</b> → <b>Instal</b>. Di iPhone fitur bagikan-ke-aplikasi ini tidak didukung: simpan video dari CapCut, lalu pilih lewat langkah 1.</p>
+  </section>
+
   <section class="card tips">
     <h2>Agar tetap HD di WhatsApp</h2>
     <ul>
@@ -299,6 +313,8 @@
 <script src="app.js"></script>
 <script src="features.js"></script>
 <script src="fx.js"></script>
+<script src="share.js"></script>
+<div id="toast" role="status" hidden></div>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <filter id="fxSvg" color-interpolation-filters="sRGB">
     <feColorMatrix id="fxTint" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0"/>
