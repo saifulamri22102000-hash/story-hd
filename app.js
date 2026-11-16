@@ -271,6 +271,7 @@ async function renderPhoto(file, forVideo) {
       drawScaled(Math.min(W / iw, H / ih));
     }
   }
+  applyFxToCanvas(ctx, canvas.width, canvas.height);
   if (burnsText()) {
     const L = layoutText(ctx, captionText(), canvas.width);
     paintText(ctx, L, (canvas.width - L.bw) / 2, textY(canvas.height, L.bh));
@@ -351,7 +352,7 @@ async function processVideo() {
     } else {
       vf = `scale='min(${H},iw)':'min(${H},ih)':force_original_aspect_ratio=decrease:force_divisible_by=2`;
     }
-    vf += ',setsar=1,format=yuv420p';
+    vf += ',setsar=1,format=yuv420p' + fxFilters();
 
     const subLines = subsForClip(start, seconds);
     if (subLines.length) {
@@ -545,6 +546,7 @@ function setMedia(file) {
   clearSubs();
   $('start').value = 0;
   syncMusicUi();
+  refreshFx();
 }
 
 function setMusic(file, credit) {

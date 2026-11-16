@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#0b141a">
+<meta name="theme-color" content="#07070f">
 <title>Story HD</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -34,13 +34,16 @@
     <img src="icon.svg" alt="" width="44" height="44">
     <div>
       <h1>Story HD</h1>
-      <p>Foto &amp; video tetap tajam di WhatsApp. Tanpa login, semua diproses di perangkatmu.</p>
+      <p>Bikin story WhatsApp kamu jernih, ada lagunya, ada teksnya.</p>
     </div>
   </header>
+  <div class="pills">
+    <span>⚡ Tanpa login</span><span>🔒 Diproses di HP-mu</span><span>✨ Efek jernih</span><span>🎵 Lagu gratis</span>
+  </div>
 
   <section class="card">
     <h2><span>1</span> Pilih foto atau video</h2>
-    <label class="pick" for="mediaInput" id="mediaPick">Ketuk untuk memilih foto / video</label>
+    <label class="pick" for="mediaInput" id="mediaPick">Ketuk untuk pilih foto / video</label>
     <input type="file" id="mediaInput" accept="image/*,video/*" hidden>
     <div id="preview" hidden>
       <img id="imgPreview" alt="Pratinjau foto" hidden>
@@ -50,7 +53,15 @@
   </section>
 
   <section class="card" id="settings" hidden>
-    <h2><span>2</span> Pengaturan</h2>
+    <h2><span>2</span> Efek &amp; pengaturan</h2>
+    <h3 class="first">✨ Efek jernih</h3>
+    <div class="fx-strip" id="fxStrip" role="radiogroup" aria-label="Efek"></div>
+    <div class="row">
+      <label for="fxAmount">Kekuatan efek <output id="fxAmountOut">100%</output></label>
+      <input type="range" id="fxAmount" min="0" max="150" value="100">
+    </div>
+    <button type="button" class="chip" id="fxCompare">👆 Tahan untuk lihat asli</button>
+    <h3>⚙️ Ukuran</h3>
     <div class="row">
       <label for="quality">Kualitas</label>
       <select id="quality">
@@ -280,5 +291,12 @@
 <script src="vendor/ffmpeg/ffmpeg.js"></script>
 <script src="app.js"></script>
 <script src="features.js"></script>
+<script src="fx.js"></script>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <filter id="fxSvg" color-interpolation-filters="sRGB">
+    <feColorMatrix id="fxTint" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0"/>
+    <feConvolveMatrix id="fxSharp" order="3" preserveAlpha="true" kernelMatrix="0 0 0 0 1 0 0 0 0"/>
+  </filter>
+</svg>
 </body>
 </html>
