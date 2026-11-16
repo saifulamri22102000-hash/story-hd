@@ -435,4 +435,9 @@ details[open] summary { color: var(--pink); }
 .fx:hover .th { transform: translateY(-2px); }
 .fx[aria-checked=true] { color: var(--text); font-weight: 600; }
 .fx[aria-checked=true] .th { border-color: var(--pink); transform: scale(1.06); box-shadow: 0 0 20px rgba(255, 78, 205, .55); }
+.guide {
+  grid-column: 1 / -1; margin: 0; padding: 10px 12px; border-radius: 12px;
+  background: rgba(0, 245, 160, .08); border: 1px solid rgba(0, 245, 160, .3);
+  color: var(--text); animation: rise .3s both;
+}
 #fxCompare { margin-bottom: 6px; touch-action: none; user-select: none; -webkit-user-select: none; }

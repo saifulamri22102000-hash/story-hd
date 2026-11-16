@@ -76,9 +76,30 @@ function trendRow(entry, i) {
     a.rel = 'noopener';
     return a;
   };
+  // Chart songs are commercial tracks, so they are not copied into the file.
+  // WhatsApp's own Status music picker has them licensed: hand the title over.
+  const use = el('button', 'chip on', '🎵 Pakai lagu ini');
+  use.type = 'button';
+  const guide = el('p', 'hint guide');
+  guide.hidden = true;
+  use.addEventListener('click', async () => {
+    const name = `${title} ${artist}`.trim();
+    let copied = false;
+    try {
+      await navigator.clipboard.writeText(name);
+      copied = true;
+    } catch (_) { /* clipboard unavailable */ }
+    use.textContent = copied ? '✓ Judul disalin' : '🎵 Pakai lagu ini';
+    guide.textContent = (copied ? 'Judul sudah disalin. ' : `Ingat judulnya: ${name}. `) +
+      'Proses foto/video di sini tanpa lagu → Kirim ke WhatsApp → Status Saya → ' +
+      'ketuk ikon ♪ di atas → tempel judul → pilih lagunya. Tanpa login TikTok atau YouTube.';
+    guide.hidden = false;
+  });
+  acts.appendChild(use);
   acts.appendChild(mkLink('TikTok', 'https://www.tiktok.com/search?q=' + query));
   acts.appendChild(mkLink('YouTube', 'https://www.youtube.com/results?search_query=' + query));
   row.appendChild(acts);
+  row.appendChild(guide);
   return row;
 }
 
