@@ -157,3 +157,55 @@ main > .card:first-of-type { animation-delay: 1.35s; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
   #splash { display: none; }
 }
+
+/* ---------- caption fonts ---------- */
+@font-face { font-family: "Poppins"; font-weight: 700; src: url(vendor/fonts/Poppins-Bold.ttf); font-display: swap; }
+@font-face { font-family: "Bebas Neue"; src: url(vendor/fonts/BebasNeue-Regular.ttf); font-display: swap; }
+@font-face { font-family: "Anton"; src: url(vendor/fonts/Anton-Regular.ttf); font-display: swap; }
+@font-face { font-family: "Pacifico"; src: url(vendor/fonts/Pacifico-Regular.ttf); font-display: swap; }
+@font-face { font-family: "Bangers"; src: url(vendor/fonts/Bangers-Regular.ttf); font-display: swap; }
+@font-face { font-family: "Permanent Marker"; src: url(vendor/fonts/PermanentMarker-Regular.ttf); font-display: swap; }
+
+/* ---------- trending songs ---------- */
+details { margin-top: 12px; border: 1px solid var(--line); border-radius: 12px; padding: 0 12px; }
+summary { cursor: pointer; padding: 12px 0; font-weight: 600; }
+details[open] { padding-bottom: 12px; }
+.trend-row {
+  display: grid; grid-template-columns: 22px 44px 1fr; gap: 10px; align-items: center;
+  padding: 10px 0; border-top: 1px solid var(--line);
+  animation: rise .35s both;
+}
+.trend-row .rank { color: var(--muted); font-weight: 700; text-align: center; }
+.trend-row img { width: 44px; height: 44px; border-radius: 8px; background: var(--bg); }
+.trend-row .t { font-weight: 600; overflow-wrap: anywhere; }
+.trend-row .a { color: var(--muted); font-size: .85rem; overflow-wrap: anywhere; }
+.trend-row .acts { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  font: inherit; font-size: .82rem; cursor: pointer; text-decoration: none;
+  color: var(--text); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 99px; padding: 6px 12px;
+  transition: border-color .2s, transform .15s;
+}
+.chip:hover { border-color: var(--accent); }
+.chip:active { transform: scale(.95); }
+.chip.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+a { color: var(--accent); }
+
+/* ---------- auto captions ---------- */
+h3 { font-size: .95rem; margin: 18px 0 4px; }
+.sub-row { display: grid; grid-template-columns: 52px 1fr 36px; gap: 8px; align-items: center; margin: 8px 0; animation: rise .3s both; }
+.sub-row .time { color: var(--muted); font-size: .8rem; font-variant-numeric: tabular-nums; }
+.sub-row input {
+  width: 100%; min-width: 0; background: var(--bg); color: var(--text);
+  border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; font: inherit;
+}
+.sub-row input:focus { border-color: var(--accent); outline: 0; }
+.sub-row button { background: none; border: 0; color: var(--danger); font-size: 1.2rem; cursor: pointer; padding: 6px; }
+#subList { max-height: 320px; overflow-y: auto; margin-top: 10px; padding-right: 4px; }
+input[type=color] { width: 48px; height: 36px; padding: 2px; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; }
+#subPreview {
+  margin-top: 12px; padding: 26px 12px; border-radius: 12px; text-align: center;
+  background: linear-gradient(135deg, #3a4a6b, #6b3a5a);
+}
+#subPreview span { display: inline-block; padding: 4px 12px; border-radius: 8px; font-size: 1.6rem; line-height: 1.25; }
+#subPreview .hi { transition: color .2s; }

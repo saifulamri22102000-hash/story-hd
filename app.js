@@ -353,6 +353,12 @@ async function processVideo() {
     }
     vf += ',setsar=1,format=yuv420p';
 
+    const subLines = subsForClip(start, seconds);
+    if (subLines.length) {
+      await writeSubtitleFiles(f, subLines);
+      vf += ',ass=subs.ass:fontsdir=fonts';
+    }
+
     const mv = (num('musicVol', 100) / 100).toFixed(2);
     const ovNum = musName ? num('origVol', 0) / 100 : 1;
     const ov = ovNum.toFixed(2);
@@ -388,7 +394,7 @@ async function processVideo() {
     if (code !== 0) throw ffmpegError();
     return await readOutput(f);
   } finally {
-    await cleanup(f, [inName, musName, textName, 'out.mp4'].filter(Boolean));
+    await cleanup(f, [inName, musName, textName, 'subs.ass', 'out.mp4'].filter(Boolean));
   }
 }
 
@@ -535,6 +541,8 @@ function setMedia(file) {
   $('resultCard').hidden = true;
   $('progressWrap').hidden = true;
   $('videoOpts').hidden = !isVideo;
+  $('subCard').hidden = !isVideo;
+  clearSubs();
   $('start').value = 0;
   syncMusicUi();
 }
