@@ -438,6 +438,7 @@ details[open] summary { color: var(--pink); }
 .guide {
   grid-column: 1 / -1; margin: 0; padding: 10px 12px; border-radius: 12px;
   background: rgba(0, 245, 160, .08); border: 1px solid rgba(0, 245, 160, .3);
-  color: var(--text); animation: rise .3s both;
+  color: var(--text); animation: rise .3s both; line-height: 2;
 }
+.guide .chip { animation: none; vertical-align: middle; }
 #fxCompare { margin-bottom: 6px; touch-action: none; user-select: none; -webkit-user-select: none; }

@@ -90,9 +90,18 @@ function trendRow(entry, i) {
       copied = true;
     } catch (_) { /* clipboard unavailable */ }
     use.textContent = copied ? '✓ Judul disalin' : '🎵 Pakai lagu ini';
-    guide.textContent = (copied ? 'Judul sudah disalin. ' : `Ingat judulnya: ${name}. `) +
-      'Proses foto/video di sini tanpa lagu → Kirim ke WhatsApp → Status Saya → ' +
-      'ketuk ikon ♪ di atas → tempel judul → pilih lagunya. Tanpa login TikTok atau YouTube.';
+    guide.textContent = '';
+    guide.appendChild(el('b', '', 'Punya file lagunya di HP? '));
+    guide.appendChild(document.createTextNode('Pilih filenya, lagu langsung masuk ke foto/video: '));
+    const pickFile = el('button', 'chip on', '📁 Pilih file lagu');
+    pickFile.type = 'button';
+    pickFile.addEventListener('click', () => $('musicInput').click());
+    guide.appendChild(pickFile);
+    guide.appendChild(el('br'));
+    guide.appendChild(el('b', '', 'Belum punya? '));
+    guide.appendChild(document.createTextNode(
+      (copied ? 'Judul sudah disalin. ' : `Judul: ${name}. `) +
+      'Kirim hasil ke WhatsApp → Status Saya → ketuk ♪ → tempel judul → pilih lagunya.'));
     guide.hidden = false;
   });
   acts.appendChild(use);
