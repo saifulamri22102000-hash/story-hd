@@ -269,13 +269,20 @@
   </section>
 
   <section class="card" id="resultCard" hidden>
-    <h2><span>✓</span> Hasil siap</h2>
+    <h2><span>✓</span> Review hasil</h2>
+    <div class="seg" role="group" aria-label="Bandingkan">
+      <button type="button" class="chip on" id="cmpAfter" aria-pressed="true">✨ Sesudah</button>
+      <button type="button" class="chip" id="cmpBefore" aria-pressed="false">Sebelum</button>
+    </div>
     <img id="outImg" alt="Hasil foto" hidden>
     <video id="outVid" controls playsinline hidden></video>
     <p class="hint" id="outInfo"></p>
+    <div class="chips" id="reviewInfo"></div>
+    <p class="ask">Sudah sesuai keinginanmu?</p>
     <button type="button" id="shareBtn" class="primary" hidden>Kirim ke WhatsApp</button>
     <p class="hint" id="shareNote" hidden></p>
     <a id="downloadBtn" class="secondary" download>Simpan ke perangkat</a>
+    <button type="button" class="secondary" id="editAgain">✏️ Belum sesuai, edit lagi</button>
     <p class="hint" id="shareHint" hidden>Browser ini tidak bisa berbagi file langsung. Simpan dulu, lalu pilih dari galeri di WhatsApp.</p>
   </section>
 

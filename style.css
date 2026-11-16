@@ -441,4 +441,10 @@ details[open] summary { color: var(--pink); }
   color: var(--text); animation: rise .3s both; line-height: 2;
 }
 .guide .chip { animation: none; vertical-align: middle; }
+.seg { display: inline-flex; gap: 6px; padding: 4px; border-radius: 99px; background: var(--field); border: 1px solid var(--line); }
+.seg .chip { border-color: transparent; background: transparent; animation: none; }
+.seg .chip.on { background: var(--grad); }
+.chip.tag { cursor: default; font-weight: 500; animation: rise .35s backwards; }
+.chip.tag:hover { border-color: var(--line); }
+.ask { margin: 16px 0 0; font-weight: 600; font-size: 1.02rem; }
 #fxCompare { margin-bottom: 6px; touch-action: none; user-select: none; -webkit-user-select: none; }

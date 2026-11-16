@@ -461,6 +461,7 @@ function showResult(file) {
   $('shareBtn').hidden = !canShare;
   $('shareHint').hidden = canShare;
   $('resultCard').hidden = false;
+  buildReview(file);
   $('resultCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 

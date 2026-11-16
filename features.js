@@ -657,3 +657,80 @@ function confetti(host) {
 new MutationObserver(() => {
   if (!$('resultCard').hidden) confetti($('resultCard'));
 }).observe($('resultCard'), { attributes: true, attributeFilter: ['hidden'] });
+
+/* ---------- result review ---------- */
+
+// Settings are captured when processing finishes, so the summary describes
+// the file on screen even if the controls are changed afterwards.
+let reviewStart = 0;
+
+function reviewChip(text) {
+  $('reviewInfo').appendChild(el('span', 'chip tag', text));
+}
+
+function buildReview(file) {
+  const isVideo = file.type.startsWith('video');
+  const fx = FX.find((f) => f.id === state.fx) || FX[0];
+  reviewStart = state.kind === 'video' ? trimRange().start : 0;
+  $('reviewInfo').textContent = '';
+
+  const sizeChip = el('span', 'chip tag', '📐 …');
+  $('reviewInfo').appendChild(sizeChip);
+  if (isVideo) {
+    const v = $('outVid');
+    v.loop = true;
+    v.addEventListener('loadedmetadata', () => {
+      sizeChip.textContent = `📐 ${v.videoWidth}×${v.videoHeight} · ${v.duration.toFixed(1)} dtk`;
+    }, { once: true });
+    v.play().catch(() => { /* autoplay may be blocked; controls remain */ });
+  } else {
+    const img = $('outImg');
+    img.addEventListener('load', () => {
+      sizeChip.textContent = `📐 ${img.naturalWidth}×${img.naturalHeight}`;
+    }, { once: true });
+  }
+  reviewChip('💾 ' + fmtSize(file.size));
+  reviewChip('✨ ' + (fx.id === 'asli' ? 'Tanpa efek' : `${fx.label} ${$('fxAmount').value}%`));
+  if (state.music) reviewChip('🎵 ' + state.music.name.replace(/\.[a-z0-9]+$/i, '').slice(0, 28));
+  else reviewChip(isVideo ? '🔊 Suara asli' : '🔇 Tanpa lagu');
+  if (isVideo && state.kind === 'video' && state.subs.length) reviewChip(`💬 ${state.subs.length} teks otomatis`);
+  if (burnsText()) reviewChip('🔤 Teks ditempel');
+  setCompare(false);
+}
+
+function setCompare(before) {
+  const outIsVideo = !!state.outFile && state.outFile.type.startsWith('video');
+  const showVideo = before ? state.kind === 'video' : outIsVideo;
+  const img = $('outImg'), vid = $('outVid');
+  const original = $('imgPreview').dataset.url || '';
+  const src = before ? original : state.outUrl;
+  const at = vid.currentTime || 0;
+  $('cmpBefore').classList.toggle('on', before);
+  $('cmpAfter').classList.toggle('on', !before);
+  $('cmpBefore').setAttribute('aria-pressed', String(before));
+  $('cmpAfter').setAttribute('aria-pressed', String(!before));
+  img.hidden = showVideo;
+  vid.hidden = !showVideo;
+  if (!showVideo) {
+    vid.pause();
+    if (img.src !== src) img.src = src;
+    return;
+  }
+  if (vid.src === src) return;
+  const wasVideo = !!vid.src && !vid.paused;
+  vid.src = src;
+  vid.loop = !before;
+  vid.addEventListener('loadedmetadata', () => {
+    // Keep the same moment on screen: the output starts at the trim point.
+    const t = before ? at + reviewStart : at - reviewStart;
+    if (Number.isFinite(t) && t > 0 && t < vid.duration) vid.currentTime = t;
+    if (wasVideo) vid.play().catch(() => {});
+  }, { once: true });
+}
+
+$('cmpAfter').addEventListener('click', () => setCompare(false));
+$('cmpBefore').addEventListener('click', () => setCompare(true));
+$('editAgain').addEventListener('click', () => {
+  $('outVid').pause();
+  $('settings').scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
