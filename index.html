@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0b141a">
+<title>Story HD</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <header>
+    <img src="icon.svg" alt="" width="44" height="44">
+    <div>
+      <h1>Story HD</h1>
+      <p>Foto &amp; video tetap tajam di WhatsApp. Tanpa login, semua diproses di perangkatmu.</p>
+    </div>
+  </header>
+
+  <section class="card">
+    <h2><span>1</span> Pilih foto atau video</h2>
+    <label class="pick" for="mediaInput" id="mediaPick">Ketuk untuk memilih foto / video</label>
+    <input type="file" id="mediaInput" accept="image/*,video/*" hidden>
+    <div id="preview" hidden>
+      <img id="imgPreview" alt="Pratinjau foto" hidden>
+      <video id="vidPreview" controls playsinline hidden></video>
+      <p class="hint" id="mediaInfo"></p>
+    </div>
+  </section>
+
+  <section class="card" id="settings" hidden>
+    <h2><span>2</span> Pengaturan</h2>
+    <div class="row">
+      <label for="quality">Kualitas</label>
+      <select id="quality">
+        <option value="720">HD 720p (cepat, disarankan)</option>
+        <option value="1080">Full HD 1080p (lebih lama)</option>
+      </select>
+    </div>
+    <div class="row">
+      <label for="mode">Bentuk</label>
+      <select id="mode">
+        <option value="asli">Ukuran asli</option>
+        <option value="fit">Story 9:16 (utuh)</option>
+        <option value="crop">Story 9:16 (penuh, dipotong)</option>
+      </select>
+    </div>
+    <div id="videoOpts" hidden>
+      <div class="row">
+        <label for="start">Mulai dari (detik)</label>
+        <input type="number" id="start" min="0" step="0.1" value="0">
+      </div>
+      <div class="row">
+        <label for="dur">Durasi (detik)</label>
+        <input type="number" id="dur" min="1" step="0.1" value="30">
+      </div>
+      <p class="hint">Status WhatsApp maksimal sekitar 60 detik per potongan.</p>
+    </div>
+  </section>
+
+  <section class="card" id="musicCard" hidden>
+    <h2><span>3</span> Tambah lagu <small>(opsional)</small></h2>
+    <label class="pick small" for="musicInput" id="musicPick">Pilih file lagu (MP3, M4A, WAV…)</label>
+    <input type="file" id="musicInput" accept="audio/*" hidden>
+    <div id="musicOpts" hidden>
+      <audio id="musicPreview" controls></audio>
+      <div class="row">
+        <label for="musicStart">Lagu mulai dari (detik)</label>
+        <input type="number" id="musicStart" min="0" step="0.1" value="0">
+      </div>
+      <div class="row">
+        <label for="musicVol">Volume lagu <output id="musicVolOut">100%</output></label>
+        <input type="range" id="musicVol" min="0" max="150" value="100">
+      </div>
+      <div class="row" id="origVolRow" hidden>
+        <label for="origVol">Suara asli video <output id="origVolOut">0%</output></label>
+        <input type="range" id="origVol" min="0" max="150" value="0">
+      </div>
+      <div class="row" id="photoDurRow" hidden>
+        <label for="photoDur">Durasi story (detik)</label>
+        <input type="number" id="photoDur" min="3" max="60" step="1" value="30">
+      </div>
+      <button type="button" class="link" id="musicRemove">Hapus lagu</button>
+    </div>
+  </section>
+
+  <section class="card" id="actionCard" hidden>
+    <button type="button" id="processBtn" class="primary">Proses jadi HD</button>
+    <div id="progressWrap" hidden>
+      <progress id="progress" max="100" value="0"></progress>
+      <p class="hint" id="status" role="status"></p>
+    </div>
+    <p class="error" id="error" role="alert" hidden></p>
+  </section>
+
+  <section class="card" id="resultCard" hidden>
+    <h2><span>✓</span> Hasil siap</h2>
+    <img id="outImg" alt="Hasil foto" hidden>
+    <video id="outVid" controls playsinline hidden></video>
+    <p class="hint" id="outInfo"></p>
+    <button type="button" id="shareBtn" class="primary" hidden>Bagikan ke WhatsApp</button>
+    <a id="downloadBtn" class="secondary" download>Simpan ke perangkat</a>
+    <p class="hint" id="shareHint" hidden>Browser ini tidak bisa berbagi file langsung. Simpan dulu, lalu pilih dari galeri di WhatsApp.</p>
+  </section>
+
+  <section class="card tips">
+    <h2>Agar tetap HD di WhatsApp</h2>
+    <ul>
+      <li>Di WhatsApp buka <b>Setelan → Penyimpanan dan data → Kualitas unggahan media</b>, pilih <b>Kualitas HD</b>.</li>
+      <li>Saat mengirim di chat, ketuk ikon <b>HD</b> sebelum mengirim.</li>
+      <li>Untuk hasil tanpa kompresi sama sekali, kirim di chat sebagai <b>Dokumen</b>.</li>
+    </ul>
+  </section>
+</main>
+<script src="vendor/ffmpeg/ffmpeg.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
