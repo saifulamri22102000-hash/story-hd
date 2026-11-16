@@ -41,7 +41,93 @@ function num(id, fallback) {
 
 function setStatus(text, pct) {
   $('status').textContent = text;
-  if (pct != null) $('progress').value = Math.max(0, Math.min(100, pct));
+  if (pct != null) {
+    const p = Math.max(0, Math.min(100, pct));
+    $('progress').firstElementChild.style.width = p + '%';
+    $('progress').setAttribute('aria-valuenow', String(Math.round(p)));
+  }
+}
+
+/* ---------- status text ---------- */
+
+function captionText() {
+  return $('caption').value.trim();
+}
+
+function burnsText() {
+  return $('burnText').checked && captionText() !== '';
+}
+
+// Word-wraps the caption for a frame `cw` pixels wide.
+function layoutText(ctx, text, cw) {
+  const fs = Math.max(14, Math.round(cw * 0.055));
+  const pad = Math.round(fs * 0.6);
+  const lh = Math.round(fs * 1.3);
+  const font = `700 ${fs}px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`;
+  ctx.font = font;
+  const maxW = cw * 0.86 - pad * 2;
+  const lines = [];
+  for (const para of text.split('\n')) {
+    let line = '';
+    for (const word of para.split(/\s+/)) {
+      const next = line ? line + ' ' + word : word;
+      if (line && ctx.measureText(next).width > maxW) {
+        lines.push(line);
+        line = word;
+      } else {
+        line = next;
+      }
+    }
+    lines.push(line);
+  }
+  const kept = lines.slice(0, 8);
+  const widest = Math.max(...kept.map((l) => ctx.measureText(l).width));
+  return {
+    lines: kept, font, lh, pad,
+    bw: Math.ceil(Math.min(cw, widest + pad * 2)),
+    bh: kept.length * lh + pad * 2,
+  };
+}
+
+function paintText(ctx, L, x, y) {
+  ctx.fillStyle = 'rgba(0,0,0,.5)';
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x, y, L.bw, L.bh, L.pad);
+  else ctx.rect(x, y, L.bw, L.bh);
+  ctx.fill();
+  ctx.font = L.font;
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  L.lines.forEach((l, i) => ctx.fillText(l, x + L.bw / 2, y + L.pad + L.lh * (i + 0.5)));
+}
+
+function textY(ch, bh) {
+  const pos = $('textPos').value;
+  if (pos === 'atas') return ch * 0.08;
+  if (pos === 'tengah') return (ch - bh) / 2;
+  return ch - bh - ch * 0.12;
+}
+
+// Transparent PNG holding only the caption box, overlaid on video by ffmpeg.
+async function makeTextPng(frameWidth) {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  const L = layoutText(ctx, captionText(), frameWidth);
+  canvas.width = L.bw;
+  canvas.height = L.bh;
+  paintText(ctx, L, 0, 0);
+  const blob = await new Promise((res) => canvas.toBlob(res, 'image/png'));
+  if (!blob) throw new Error('Teks tidak bisa dibuat.');
+  return blob;
+}
+
+function videoOutWidth() {
+  const { W, H } = dims();
+  if ($('mode').value !== 'asli') return W;
+  const v = $('vidPreview');
+  const vw = v.videoWidth || W, vh = v.videoHeight || H;
+  return even(vw * Math.min(1, H / Math.max(vw, vh)));
 }
 
 function showError(msg) {
@@ -185,6 +271,10 @@ async function renderPhoto(file, forVideo) {
       drawScaled(Math.min(W / iw, H / ih));
     }
   }
+  if (burnsText()) {
+    const L = layoutText(ctx, captionText(), canvas.width);
+    paintText(ctx, L, (canvas.width - L.bw) / 2, textY(canvas.height, L.bh));
+  }
   if (bmp.close) bmp.close();
   const blob = await new Promise((res) => canvas.toBlob(res, 'image/jpeg', 0.95));
   if (!blob) throw new Error('Foto tidak bisa diproses.');
@@ -241,6 +331,8 @@ async function processVideo() {
   setStatus('Membaca video…', 4);
   await writeInput(f, inName, state.media);
   if (musName) await writeInput(f, musName, state.music);
+  const textName = burnsText() ? 'text.png' : null;
+  if (textName) await writeInput(f, textName, await makeTextPng(videoOutWidth()));
 
   try {
     if (musName) await assertHasAudio(f, musName);
@@ -280,7 +372,14 @@ async function processVideo() {
     if (musName) {
       args.push('-stream_loop', '-1', '-ss', String(Math.max(0, num('musicStart', 0))), '-i', musName);
     }
-    args.push('-filter_complex', `[0:v]${vf}[v]${af}`, '-map', '[v]');
+    let vchain = `[0:v]${vf}[v]`;
+    if (textName) {
+      args.push('-i', textName);
+      const pos = $('textPos').value;
+      const y = pos === 'atas' ? 'H*0.08' : pos === 'tengah' ? '(H-h)/2' : 'H-h-H*0.12';
+      vchain = `[0:v]${vf}[base];[base][${musName ? 2 : 1}:v]overlay=(W-w)/2:${y}[v]`;
+    }
+    args.push('-filter_complex', vchain + af, '-map', '[v]');
     args.push(...(af ? ['-map', '[a]'] : ['-an']));
     args.push(...encodeArgs(q, seconds, ['-fpsmax', '30']));
 
@@ -289,7 +388,7 @@ async function processVideo() {
     if (code !== 0) throw ffmpegError();
     return await readOutput(f);
   } finally {
-    await cleanup(f, [inName, musName, 'out.mp4'].filter(Boolean));
+    await cleanup(f, [inName, musName, textName, 'out.mp4'].filter(Boolean));
   }
 }
 
@@ -360,13 +459,43 @@ function showResult(file) {
 
 async function onShare() {
   if (!state.outFile) return;
+  const text = captionText();
+  const data = { files: [state.outFile] };
+  let note = 'Pilih WhatsApp, lalu Status Saya.';
+  if (text) {
+    // WhatsApp sometimes drops the text of a file share, so keep a copy ready to paste.
+    try {
+      await navigator.clipboard.writeText(text);
+      note += ' Teks status sudah disalin: tempel jika tidak muncul otomatis.';
+    } catch (_) { /* clipboard unavailable */ }
+    if (navigator.canShare({ files: data.files, text })) data.text = text;
+  }
+  $('shareNote').textContent = note;
+  $('shareNote').hidden = false;
   try {
-    await navigator.share({ files: [state.outFile] });
+    await navigator.share(data);
   } catch (err) {
     if (err && err.name !== 'AbortError') {
       showError('Tidak bisa membagikan langsung. Simpan dulu, lalu pilih dari galeri di WhatsApp.');
     }
   }
+}
+
+async function onShareTextOnly() {
+  const text = captionText();
+  if (!text) {
+    $('caption').focus();
+    return;
+  }
+  if (navigator.share) {
+    try {
+      await navigator.share({ text });
+      return;
+    } catch (err) {
+      if (err && err.name === 'AbortError') return;
+    }
+  }
+  window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener');
 }
 
 /* ---------- input handling ---------- */
@@ -454,6 +583,8 @@ $('mediaInput').addEventListener('change', (e) => setMedia(e.target.files[0]));
 $('musicRemove').addEventListener('click', () => setMusic(null));
 $('processBtn').addEventListener('click', onProcess);
 $('shareBtn').addEventListener('click', onShare);
+$('textOnlyBtn').addEventListener('click', onShareTextOnly);
+$('burnText').addEventListener('change', () => { $('textPosRow').hidden = !$('burnText').checked; });
 bindRange('musicVol');
 bindRange('origVol');
 

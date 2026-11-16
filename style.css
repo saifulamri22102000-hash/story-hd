@@ -69,8 +69,91 @@ button, .secondary { font: inherit; cursor: pointer; }
 .primary:disabled { opacity: .5; cursor: default; }
 .secondary { background: transparent; color: var(--text); border: 1px solid var(--line); }
 .link { background: none; border: 0; color: var(--danger); padding: 6px 0; }
-progress { width: 100%; height: 10px; margin-top: 14px; accent-color: var(--accent); }
 .tips ul { margin: 0; padding-left: 20px; color: var(--muted); font-size: .9rem; }
 .tips li { margin: 6px 0; }
 .tips b { color: var(--text); }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- text status ---------- */
+textarea {
+  width: 100%; resize: vertical; min-height: 84px;
+  background: var(--bg); color: var(--text);
+  border: 1px solid var(--line); border-radius: 12px;
+  padding: 12px; font: inherit;
+  transition: border-color .2s, box-shadow .2s;
+}
+textarea:focus, select:focus, input[type=number]:focus {
+  border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37, 211, 102, .18); outline: 0;
+}
+.check { display: flex; align-items: center; gap: 10px; margin: 12px 0 4px; font-size: .95rem; cursor: pointer; }
+.check input { width: 20px; height: 20px; accent-color: var(--accent); }
+
+/* ---------- motion ---------- */
+body::before, body::after {
+  content: ""; position: fixed; z-index: -1;
+  width: 60vmax; height: 60vmax; border-radius: 50%;
+  filter: blur(80px); opacity: .16; background: var(--accent);
+  animation: drift 18s ease-in-out infinite alternate;
+}
+body::before { top: -25vmax; left: -22vmax; }
+body::after {
+  bottom: -30vmax; right: -22vmax; background: #34b7f1;
+  animation-duration: 24s; animation-direction: alternate-reverse;
+}
+
+#splash {
+  position: fixed; inset: 0; z-index: 10; background: var(--bg);
+  display: grid; place-content: center; justify-items: center; gap: 14px;
+  pointer-events: none;
+  animation: splashOut .5s 1.2s forwards;
+}
+#splash img { animation: pop .7s cubic-bezier(.2, 1.4, .4, 1) both, pulse 1.2s .7s ease-in-out infinite; }
+#splash b { font-size: 1.4rem; letter-spacing: .04em; animation: rise .5s .35s both; }
+
+header { animation: rise .5s 1.25s both; }
+header img { animation: float 4s ease-in-out infinite; }
+.card { animation: rise .5s cubic-bezier(.2, .8, .2, 1) both; }
+main > .card:first-of-type { animation-delay: 1.35s; }
+#textCard { animation-delay: 1.45s; }
+.tips { animation-delay: 1.55s; }
+
+.pick { transition: border-color .2s, color .2s, transform .2s, background .2s; }
+.pick:hover { transform: translateY(-2px); background: rgba(37, 211, 102, .05); }
+.pick:active { transform: scale(.98); }
+#preview img, #preview video, #outImg, #outVid { animation: zoomIn .45s cubic-bezier(.2, .8, .2, 1) both; }
+#musicOpts, #videoOpts, #textPosRow { animation: rise .35s both; }
+
+.primary, .secondary { transition: transform .15s, box-shadow .25s, background .2s; }
+.primary { box-shadow: 0 6px 20px rgba(37, 211, 102, .25); }
+.primary:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(37, 211, 102, .35); }
+.primary:active, .secondary:active { transform: scale(.97); }
+.secondary:hover { background: rgba(255, 255, 255, .05); }
+#processBtn:not(:disabled) { animation: glow 2.4s ease-in-out infinite; }
+#processBtn:disabled {
+  background: linear-gradient(90deg, var(--accent), #7dffb0, var(--accent));
+  background-size: 200% 100%; animation: shimmer 1.2s linear infinite;
+}
+#resultCard h2 span { animation: pop .6s cubic-bezier(.2, 1.4, .4, 1) .15s both; }
+
+.bar { height: 10px; border-radius: 99px; background: var(--bg); overflow: hidden; margin-top: 14px; }
+.bar i {
+  display: block; height: 100%; width: 0; border-radius: 99px;
+  background: linear-gradient(90deg, var(--accent), #7dffb0, var(--accent));
+  background-size: 200% 100%;
+  animation: shimmer 1.2s linear infinite; transition: width .3s;
+}
+
+@keyframes drift { to { transform: translate(12vmax, 8vmax) scale(1.2); } }
+@keyframes splashOut { to { opacity: 0; visibility: hidden; transform: scale(1.08); } }
+@keyframes pop { from { opacity: 0; transform: scale(.3) rotate(-20deg); } }
+@keyframes pulse { 50% { transform: scale(1.06); } }
+@keyframes rise { from { opacity: 0; transform: translateY(18px); } }
+@keyframes zoomIn { from { opacity: 0; transform: scale(.94); } }
+@keyframes float { 50% { transform: translateY(-4px); } }
+@keyframes glow { 50% { box-shadow: 0 6px 30px rgba(37, 211, 102, .5); } }
+@keyframes shimmer { to { background-position: -200% 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  #splash { display: none; }
+}

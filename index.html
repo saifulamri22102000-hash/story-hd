@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<div id="splash" aria-hidden="true"><img src="icon.svg" alt="" width="96" height="96"><b>Story HD</b></div>
 <main>
   <header>
     <img src="icon.svg" alt="" width="44" height="44">
@@ -92,10 +93,25 @@
     </div>
   </section>
 
+  <section class="card" id="textCard">
+    <h2><span>T</span> Teks status <small>(opsional)</small></h2>
+    <textarea id="caption" rows="3" maxlength="700" aria-label="Teks status" placeholder="Tulis teks status…"></textarea>
+    <label class="check"><input type="checkbox" id="burnText"> Tempel teks di atas foto / video</label>
+    <div class="row" id="textPosRow" hidden>
+      <label for="textPos">Posisi teks</label>
+      <select id="textPos">
+        <option value="bawah">Bawah</option>
+        <option value="tengah">Tengah</option>
+        <option value="atas">Atas</option>
+      </select>
+    </div>
+    <button type="button" class="secondary" id="textOnlyBtn">Kirim teks saja ke WhatsApp</button>
+  </section>
+
   <section class="card" id="actionCard" hidden>
     <button type="button" id="processBtn" class="primary">Proses jadi HD</button>
     <div id="progressWrap" hidden>
-      <progress id="progress" max="100" value="0"></progress>
+      <div class="bar" id="progress" role="progressbar" aria-label="Kemajuan proses" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div>
       <p class="hint" id="status" role="status"></p>
     </div>
     <p class="error" id="error" role="alert" hidden></p>
@@ -106,7 +122,8 @@
     <img id="outImg" alt="Hasil foto" hidden>
     <video id="outVid" controls playsinline hidden></video>
     <p class="hint" id="outInfo"></p>
-    <button type="button" id="shareBtn" class="primary" hidden>Bagikan ke WhatsApp</button>
+    <button type="button" id="shareBtn" class="primary" hidden>Kirim ke WhatsApp</button>
+    <p class="hint" id="shareNote" hidden></p>
     <a id="downloadBtn" class="secondary" download>Simpan ke perangkat</a>
     <p class="hint" id="shareHint" hidden>Browser ini tidak bisa berbagi file langsung. Simpan dulu, lalu pilih dari galeri di WhatsApp.</p>
   </section>
