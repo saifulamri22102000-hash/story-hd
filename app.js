@@ -97,6 +97,14 @@ async function cleanup(f, names) {
   }
 }
 
+// The music source may be a song or a video; either way it must carry sound.
+async function assertHasAudio(f, name) {
+  await run(f, ['-hide_banner', '-i', name], 0);
+  if (!logTail.some((l) => /Stream #0:\d+.*Audio:/.test(l))) {
+    throw new Error('File yang dipilih untuk lagu tidak punya suara.');
+  }
+}
+
 function videoBitrate(q, seconds) {
   const cap = q === 1080 ? 6000 : 3500;
   const fit = Math.floor((MAX_BYTES * 8) / 1000 / seconds - AUDIO_KBPS - 16);
@@ -210,6 +218,7 @@ async function processPhotoWithMusic() {
     ...encodeArgs(q, seconds, ['-tune', 'stillimage', '-r', String(PHOTO_FPS)]),
   ];
   try {
+    await assertHasAudio(f, musName);
     const code = await run(f, args, seconds);
     if (code !== 0) throw ffmpegError();
     return await readOutput(f);
@@ -234,6 +243,7 @@ async function processVideo() {
   if (musName) await writeInput(f, musName, state.music);
 
   try {
+    if (musName) await assertHasAudio(f, musName);
     // Probe: ffmpeg exits non-zero here by design, only the log matters.
     await run(f, ['-hide_banner', '-i', inName], 0);
     const hasAudio = logTail.some((l) => /Stream #0:\d+.*Audio:/.test(l));
@@ -407,13 +417,14 @@ function setMusic(file) {
   if (file) {
     audio.dataset.url = URL.createObjectURL(file);
     audio.src = audio.dataset.url;
-    $('musicPick').textContent = file.name;
+    $('musicName').textContent = (file.type.startsWith('video') ? 'Suara dari video: ' : 'Lagu: ') +
+      `${file.name} · ${fmtSize(file.size)}`;
   } else {
     audio.removeAttribute('src');
     audio.load();
     delete audio.dataset.url;
     $('musicInput').value = '';
-    $('musicPick').textContent = 'Pilih file lagu (MP3, M4A, WAV…)';
+    $('musicVidInput').value = '';
   }
   syncMusicUi();
 }
@@ -434,9 +445,11 @@ function bindRange(id) {
 }
 
 $('mediaInput').addEventListener('change', (e) => setMedia(e.target.files[0]));
-$('musicInput').addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if (file) setMusic(file);
+['musicInput', 'musicVidInput'].forEach((id) => {
+  $(id).addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) setMusic(file);
+  });
 });
 $('musicRemove').addEventListener('click', () => setMusic(null));
 $('processBtn').addEventListener('click', onProcess);

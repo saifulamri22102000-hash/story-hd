@@ -40,6 +40,7 @@ h2 small { color: var(--muted); font-weight: 400; }
   padding: 28px 12px; color: var(--muted);
 }
 .pick.small { padding: 14px 12px; }
+.picks { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .pick:hover, .pick.drag { border-color: var(--accent); color: var(--text); }
 #preview img, #preview video, #outImg, #outVid {
   display: block; width: 100%; max-height: 420px; object-fit: contain;

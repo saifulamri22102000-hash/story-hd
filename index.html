@@ -62,9 +62,15 @@
 
   <section class="card" id="musicCard" hidden>
     <h2><span>3</span> Tambah lagu <small>(opsional)</small></h2>
-    <label class="pick small" for="musicInput" id="musicPick">Pilih file lagu (MP3, M4A, WAV…)</label>
+    <div class="picks">
+      <label class="pick small" for="musicInput">Pilih file lagu</label>
+      <label class="pick small" for="musicVidInput">Ambil suara dari video</label>
+    </div>
     <input type="file" id="musicInput" accept="audio/*" hidden>
+    <input type="file" id="musicVidInput" accept="video/*" hidden>
+    <p class="hint">Lagu dari TikTok atau aplikasi lain: simpan videonya ke galeri dulu, lalu pilih lewat “Ambil suara dari video”.</p>
     <div id="musicOpts" hidden>
+      <p class="hint" id="musicName"></p>
       <audio id="musicPreview" controls></audio>
       <div class="row">
         <label for="musicStart">Lagu mulai dari (detik)</label>
