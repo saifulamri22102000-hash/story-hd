@@ -203,6 +203,12 @@ function threadSafeArgs(args) {
     if (a === '-i') out.push('-threads', '1');
     out.push(a);
   });
+  // Every encoder must have an explicit cap: the default (all cores) crashes.
+  const lastInput = out.lastIndexOf('-i');
+  const hasOutput = lastInput >= 0 && out.length > lastInput + 2;
+  if (hasOutput && !out.slice(lastInput + 2).includes('-threads')) {
+    out.splice(out.length - 1, 0, '-threads', String(engineThreads));
+  }
   return out;
 }
 

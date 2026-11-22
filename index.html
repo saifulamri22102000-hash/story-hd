@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=15">
+<link rel="stylesheet" href="style.css?v=16">
 </head>
 <body>
 <div id="splash" aria-hidden="true">
@@ -369,9 +369,17 @@
     <p class="hint" id="outInfo"></p>
     <div class="chips" id="reviewInfo"></div>
     <p class="ask">Sudah sesuai keinginanmu?</p>
-    <button type="button" id="shareBtn" class="primary" hidden>Kirim ke WhatsApp</button>
+    <a id="downloadBtn" class="primary" download>💾 Simpan ke galeri (cara paling jernih)</a>
+    <ol class="upload-steps">
+      <li>Ketuk <b>Simpan</b> di atas.</li>
+      <li>Buka WhatsApp → tab <b>Pembaruan</b> → ikon kamera/pensil di Status.</li>
+      <li>Pilih video ini dari galeri (album <b>Download</b>).</li>
+      <li>Di bagian atas layar, ketuk ikon <b>HD</b> sampai menyala (kalau ada).</li>
+      <li>Jangan potong atau tambah apa pun, langsung kirim.</li>
+    </ol>
+    <p class="hint">Kalau video dibagikan dari aplikasi lain lewat tombol Bagikan, WhatsApp tidak selalu menampilkan pilihan HD. Mengunggah dari dalam WhatsApp memberi pilihan itu.</p>
+    <button type="button" id="shareBtn" class="secondary" hidden>Kirim langsung ke WhatsApp</button>
     <p class="hint" id="shareNote" hidden></p>
-    <a id="downloadBtn" class="secondary" download>Simpan ke perangkat</a>
     <button type="button" class="secondary" id="editAgain">✏️ Belum sesuai, edit lagi</button>
     <p class="hint" id="shareHint" hidden>Browser ini tidak bisa berbagi file langsung. Simpan dulu, lalu pilih dari galeri di WhatsApp.</p>
   </section>
@@ -408,12 +416,12 @@
   </filter>
 </svg>
 <script src="vendor/ffmpeg/ffmpeg.js"></script>
-<script src="app.js?v=15"></script>
-<script src="features.js?v=15"></script>
-<script src="fx.js?v=15"></script>
-<script src="share.js?v=15"></script>
-<script src="wa.js?v=15"></script>
-<script src="edit.js?v=15"></script>
+<script src="app.js?v=16"></script>
+<script src="features.js?v=16"></script>
+<script src="fx.js?v=16"></script>
+<script src="share.js?v=16"></script>
+<script src="wa.js?v=16"></script>
+<script src="edit.js?v=16"></script>
 <div id="toast" role="status" hidden></div>
 </body>
 </html>
