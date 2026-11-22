@@ -136,7 +136,7 @@ function showError(msg) {
 }
 
 function dims() {
-  const q = parseInt($('quality').value, 10);
+  const q = waProfile().short || parseInt($('quality').value, 10);
   return { q, W: q, H: (q * 16) / 9 };
 }
 
@@ -200,15 +200,50 @@ function videoBitrate(q, seconds) {
   return Math.max(700, Math.min(cap, fit));
 }
 
+/* WhatsApp Status output profiles. WhatsApp publishes no numbers, so these
+   cover the range people report: a file already close to what WhatsApp's own
+   encoder produces is changed least by its pass. "maks" keeps the old
+   quality-first behaviour, "manual" exposes every knob for the user's own tests. */
+const WA_PROFILES = {
+  aman: { short: 720, fps: 30, kbps: 2000, profile: 'main' },
+  ringan: { short: 720, fps: 30, kbps: 1200, profile: 'main' },
+  maks: { short: 0, fps: 30, kbps: 0, profile: 'high' },
+};
+
+function waProfile() {
+  const id = $('waProfile').value;
+  if (id === 'manual') {
+    return {
+      short: parseInt($('mRes').value, 10) || 720,
+      fps: parseInt($('mFps').value, 10) || 30,
+      kbps: parseInt($('mKbps').value, 10) || 2000,
+      profile: $('mProf').value === 'high' ? 'high' : 'main',
+    };
+  }
+  return WA_PROFILES[id] || WA_PROFILES.aman;
+}
+
 function encodeArgs(q, seconds, extra) {
-  const vb = videoBitrate(q, seconds);
+  const p = waProfile();
+  const fit = Math.floor((MAX_BYTES * 8) / 1000 / seconds - AUDIO_KBPS - 16);
+  let rate;
+  if (p.kbps) {
+    // Fixed target: the bitrate is the whole point of these profiles.
+    const vb = Math.max(500, Math.min(p.kbps, fit));
+    rate = ['-preset', 'fast', '-b:v', vb + 'k', '-maxrate', Math.round(vb * 1.25) + 'k',
+      '-bufsize', vb * 2 + 'k'];
+  } else {
+    const vb = videoBitrate(q, seconds);
+    rate = ['-preset', 'veryfast', '-crf', q === 1080 ? '19' : '18',
+      '-maxrate', vb + 'k', '-bufsize', vb * 2 + 'k'];
+  }
+  const level = q >= 1080 || p.fps > 30 ? '4.1' : '3.1';
   return [
     '-t', String(seconds),
-    '-c:v', 'libx264', '-preset', 'veryfast', '-crf', q === 1080 ? '19' : '18',
-    '-maxrate', vb + 'k', '-bufsize', vb * 2 + 'k',
+    '-c:v', 'libx264', ...rate,
     '-x264-params', 'aq-mode=3:deblock=-1,-1',
-    '-g', '60', '-keyint_min', '30',
-    '-profile:v', 'high', '-level', '4.1', '-pix_fmt', 'yuv420p',
+    '-g', String(p.fps * 2), '-keyint_min', String(p.fps),
+    '-profile:v', p.profile, '-level', level, '-pix_fmt', 'yuv420p',
     ...extra,
     '-c:a', 'aac', '-b:a', AUDIO_KBPS + 'k', '-ar', '44100', '-ac', '2',
     '-movflags', '+faststart',
@@ -393,7 +428,7 @@ async function processVideo() {
     }
     args.push('-filter_complex', vchain + af, '-map', '[v]');
     args.push(...(af ? ['-map', '[a]'] : ['-an']));
-    args.push(...encodeArgs(q, seconds, ['-fpsmax', '30']));
+    args.push(...encodeArgs(q, seconds, ['-fpsmax', String(waProfile().fps)]));
 
     setStatus('Memproses… 0%', 5);
     const code = await run(f, args, seconds);

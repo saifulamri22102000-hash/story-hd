@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=13">
+<link rel="stylesheet" href="style.css?v=14">
 </head>
 <body>
 <div id="splash" aria-hidden="true">
@@ -62,15 +62,55 @@
       <input type="range" id="fxAmount" min="0" max="150" value="100">
     </div>
     <button type="button" class="chip" id="fxCompare">👆 Tahan untuk lihat asli</button>
-    <h3>⚙️ Ukuran</h3>
+    <h3>📲 Setelan Status WhatsApp</h3>
     <div class="row">
+      <label for="waProfile">Profil</label>
+      <select id="waProfile">
+        <option value="aman">Aman Status · 720p, 2 Mbps (disarankan)</option>
+        <option value="ringan">Anti-kompres · 720p, 1,2 Mbps</option>
+        <option value="maks">Kualitas maksimal · hingga 5 Mbps</option>
+        <option value="manual">Manual (atur sendiri)</option>
+      </select>
+    </div>
+    <p class="hint" id="waHint"></p>
+    <div id="manualOpts" hidden>
+      <div class="row">
+        <label for="mRes">Resolusi (sisi pendek)</label>
+        <select id="mRes">
+          <option value="540">540p</option>
+          <option value="720" selected>720p</option>
+          <option value="1080">1080p</option>
+        </select>
+      </div>
+      <div class="row">
+        <label for="mFps">Frame per detik</label>
+        <select id="mFps">
+          <option value="24">24</option>
+          <option value="25">25</option>
+          <option value="30" selected>30</option>
+        </select>
+      </div>
+      <div class="row">
+        <label for="mKbps">Bitrate video <output id="mKbpsOut">2000 kbps</output></label>
+        <input type="range" id="mKbps" min="600" max="8000" step="100" value="2000">
+      </div>
+      <div class="row">
+        <label for="mProf">Profil H.264</label>
+        <select id="mProf">
+          <option value="main">Main (paling cocok WhatsApp)</option>
+          <option value="high">High</option>
+        </select>
+      </div>
+    </div>
+    <h3>⚙️ Ukuran</h3>
+    <div class="row" id="qualityRow">
       <label for="quality">Kualitas</label>
       <select id="quality">
         <option value="720">HD 720p · khusus WhatsApp (disarankan)</option>
         <option value="1080">Full HD 1080p · simpan / kirim dokumen</option>
       </select>
     </div>
-    <p class="hint">WhatsApp selalu mengecilkan video ke 720p. Pilih 720p supaya kita yang mengecilkan dengan kualitas tinggi, bukan WhatsApp.</p>
+    <p class="hint" id="qualityHint">WhatsApp selalu mengecilkan video ke 720p. Pilih 720p supaya kita yang mengecilkan dengan kualitas tinggi, bukan WhatsApp.</p>
     <div class="row">
       <label for="mode">Bentuk</label>
       <select id="mode">
@@ -263,11 +303,19 @@
 
   <section class="card" id="actionCard" hidden>
     <button type="button" id="processBtn" class="primary">Proses jadi HD</button>
+    <button type="button" class="secondary" id="testBtn" hidden>🧪 Buat 3 versi uji (5 detik)</button>
     <div id="progressWrap" hidden>
       <div class="bar" id="progress" role="progressbar" aria-label="Kemajuan proses" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div>
       <p class="hint" id="status" role="status"></p>
     </div>
     <p class="error" id="error" role="alert" hidden></p>
+  </section>
+
+  <section class="card" id="testCard" hidden>
+    <h2><span>🧪</span> Versi uji</h2>
+    <p class="hint">Unggah ketiganya ke Status WhatsApp (atur privasi Status ke satu kontak saja, mis. nomormu yang lain), lalu lihat mana yang paling jernih setelah terunggah. Pakai profil itu untuk video lengkap.</p>
+    <div id="testList"></div>
+    <button type="button" class="primary" id="testShareAll" hidden>Kirim ketiganya ke WhatsApp</button>
   </section>
 
   <section class="card" id="resultCard" hidden>
@@ -314,10 +362,11 @@
   </section>
 </main>
 <script src="vendor/ffmpeg/ffmpeg.js"></script>
-<script src="app.js?v=13"></script>
-<script src="features.js?v=13"></script>
-<script src="fx.js?v=13"></script>
-<script src="share.js?v=13"></script>
+<script src="app.js?v=14"></script>
+<script src="features.js?v=14"></script>
+<script src="fx.js?v=14"></script>
+<script src="share.js?v=14"></script>
+<script src="wa.js?v=14"></script>
 <div id="toast" role="status" hidden></div>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <filter id="fxSvg" color-interpolation-filters="sRGB">
