@@ -39,7 +39,21 @@ async function takeSharedMedia() {
 }
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch((err) => console.error(err));
+  navigator.serviceWorker.register('sw.js').then(() => {
+    // The very first visit is not yet served through the worker, so it lacks
+    // the isolation headers. Reload once to pick up the fast engine.
+    navigator.serviceWorker.ready.then(() => {
+      let tried = false;
+      try { tried = sessionStorage.getItem('coi-reload') === '1'; } catch (_) { /* storage blocked */ }
+      if (window.crossOriginIsolated || tried || state.media) return;
+      try { sessionStorage.setItem('coi-reload', '1'); } catch (_) { return; }
+      location.reload();
+    });
+  }).catch((err) => console.error(err));
+  // An updated worker taking over mid-visit: reload so its headers apply.
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!window.crossOriginIsolated && !state.media && !state.busy) location.reload();
+  });
 }
 takeSharedMedia();
 

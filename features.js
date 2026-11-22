@@ -167,7 +167,7 @@ function videoOutSize() {
   const { W, H } = dims();
   if ($('mode').value !== 'asli') return { w: W, h: H };
   const v = $('vidPreview');
-  const vw = v.videoWidth || W, vh = v.videoHeight || H;
+  const [vw, vh] = rotatedSize(v.videoWidth || W, v.videoHeight || H);
   const s = Math.min(1, H / Math.max(vw, vh));
   return { w: even(vw * s), h: even(vh * s) };
 }

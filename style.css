@@ -462,3 +462,9 @@ details[open] summary { color: var(--pink); }
 .chip.tag:hover { border-color: var(--line); }
 .ask { margin: 16px 0 0; font-weight: 600; font-size: 1.02rem; }
 #fxCompare { margin-bottom: 6px; touch-action: none; user-select: none; -webkit-user-select: none; }
+
+/* ---------- edit tools ---------- */
+details.adjust { margin: 10px 0 4px; }
+details.adjust[open] { padding-bottom: 10px; }
+#vidPreview { transition: transform .3s; }
+#markMusic { margin: 4px 0 6px; }

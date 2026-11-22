@@ -126,7 +126,7 @@ function videoOutWidth() {
   const { W, H } = dims();
   if ($('mode').value !== 'asli') return W;
   const v = $('vidPreview');
-  const vw = v.videoWidth || W, vh = v.videoHeight || H;
+  const [vw, vh] = rotatedSize(v.videoWidth || W, v.videoHeight || H);
   return even(vw * Math.min(1, H / Math.max(vw, vh)));
 }
 
@@ -142,9 +142,43 @@ function dims() {
 
 /* ---------- ffmpeg ---------- */
 
+// Multi-threaded engine when the page is cross-origin isolated (see sw.js),
+// otherwise the single-threaded one. Same ffmpeg build, same output.
+let engineThreads = 1;
+let mtBroken = false;
+
 async function getFFmpeg() {
   if (ffmpeg) return ffmpeg;
   if (!window.FFmpegWASM) throw new Error('Mesin video gagal dimuat. Muat ulang halaman.');
+  if (!mtBroken && window.crossOriginIsolated && typeof SharedArrayBuffer !== 'undefined') {
+    try {
+      const base = new URL('vendor/ffmpeg-mt/', location.href).href;
+      const f = newFFmpeg();
+      await f.load({
+        coreURL: base + 'ffmpeg-core.js',
+        wasmURL: base + 'ffmpeg-core.wasm',
+        workerURL: base + 'ffmpeg-core.worker.js',
+      });
+      // Measured: 8 encoder threads crash this build, 4 are stable.
+      engineThreads = Math.max(2, Math.min(4, navigator.hardwareConcurrency || 4));
+      ffmpeg = f;
+      return f;
+    } catch (err) {
+      console.warn('Multi-thread engine unavailable, using single thread.', err);
+    }
+  }
+  const f = newFFmpeg();
+  const base = new URL('vendor/ffmpeg/', location.href).href;
+  await f.load({
+    coreURL: base + 'ffmpeg-core.js',
+    wasmURL: base + 'ffmpeg-core.wasm',
+  });
+  engineThreads = 1;
+  ffmpeg = f;
+  return f;
+}
+
+function newFFmpeg() {
   const f = new FFmpegWASM.FFmpeg();
   f.on('log', ({ message }) => {
     logTail.push(message);
@@ -156,25 +190,81 @@ async function getFFmpeg() {
       setStatus('Memproses… ' + Math.round(pct) + '%', pct);
     }
   });
-  const base = new URL('vendor/ffmpeg/', location.href).href;
-  await f.load({
-    coreURL: base + 'ffmpeg-core.js',
-    wasmURL: base + 'ffmpeg-core.wasm',
-  });
-  ffmpeg = f;
   return f;
+}
+
+// In the multi-threaded engine, threaded decoders and filter graphs deadlock
+// (measured: decoding never starts). Keep them single-threaded and let only
+// the x264 encoder use the extra cores, which is where the time goes anyway.
+function threadSafeArgs(args) {
+  if (engineThreads <= 1) return args;
+  const out = ['-filter_complex_threads', '1'];
+  args.forEach((a) => {
+    if (a === '-i') out.push('-threads', '1');
+    out.push(a);
+  });
+  return out;
+}
+
+// Runs an export; if the multi-threaded engine fails, switch to the
+// single-threaded one for the rest of the visit and try once more.
+async function withEngineFallback(job) {
+  try {
+    return await job();
+  } catch (err) {
+    if (engineThreads <= 1) throw err;
+    console.warn('Multi-thread export failed, retrying single-threaded.', err);
+    mtBroken = true;
+    try { ffmpeg.terminate(); } catch (_) { /* already dead */ }
+    ffmpeg = null;
+    engineThreads = 1;
+    mounts.clear();
+    setStatus('Mengulang dengan mode aman…', 3);
+    return job();
+  }
 }
 
 async function run(f, args, total) {
   logTail = [];
   progressTotal = total || 0;
-  const code = await f.exec(args);
+  const code = await f.exec(threadSafeArgs(args));
   progressTotal = 0;
   return code;
 }
 
 async function writeInput(f, name, blob) {
   await f.writeFile(name, new Uint8Array(await blob.arrayBuffer()));
+}
+
+// Large inputs (video, song) are mounted read-only instead of copied into the
+// engine's memory: no upfront copy, and long videos no longer run out of memory.
+// Returns the path to pass to -i. Falls back to a copy if mounting fails.
+let mountSeq = 0;
+const mounts = new Map();
+
+async function mountInput(f, file, fallbackName) {
+  const dir = '/in' + ++mountSeq;
+  try {
+    await f.createDir(dir);
+    // WORKERFS needs a real File with a name; Blobs get wrapped.
+    const named = file instanceof File ? file : new File([file], fallbackName);
+    await f.mount('WORKERFS', { files: [named] }, dir);
+    mounts.set(fallbackName, dir);
+    return dir + '/' + named.name;
+  } catch (err) {
+    console.warn('mount failed, copying instead', err);
+    try { await f.deleteDir(dir); } catch (_) { /* not created */ }
+    await writeInput(f, fallbackName, file);
+    return fallbackName;
+  }
+}
+
+async function unmountInput(f, fallbackName) {
+  const dir = mounts.get(fallbackName);
+  mounts.delete(fallbackName);
+  if (!dir) return cleanup(f, [fallbackName]);
+  try { await f.unmount(dir); } catch (_) { /* already gone */ }
+  try { await f.deleteDir(dir); } catch (_) { /* already gone */ }
 }
 
 async function cleanup(f, names) {
@@ -240,7 +330,7 @@ function encodeArgs(q, seconds, extra) {
   const level = q >= 1080 || p.fps > 30 ? '4.1' : '3.1';
   return [
     '-t', String(seconds),
-    '-c:v', 'libx264', ...rate,
+    '-c:v', 'libx264', ...rate, '-threads', String(engineThreads),
     '-x264-params', 'aq-mode=3:deblock=-1,-1',
     '-g', String(p.fps * 2), '-keyint_min', String(p.fps),
     '-profile:v', p.profile, '-level', level, '-pix_fmt', 'yuv420p',
@@ -330,6 +420,44 @@ async function processPhotoOnly() {
   return new File([blob], outName('jpg'), { type: 'image/jpeg' });
 }
 
+/* ---------- edit settings ---------- */
+
+function editSpeed() {
+  const s = parseFloat($('vSpeed').value);
+  return s >= 0.5 && s <= 2 ? s : 1;
+}
+
+function editRotation() {
+  return parseInt($('vRotate').value, 10) || 0;
+}
+
+// Source size after rotation, for the "original size" mode.
+function rotatedSize(vw, vh) {
+  const r = editRotation();
+  return r === 90 || r === 270 ? [vh, vw] : [vw, vh];
+}
+
+function geometryFilters() {
+  const r = editRotation();
+  const parts = [];
+  if (r === 90) parts.push('transpose=1');
+  else if (r === 180) parts.push('hflip', 'vflip');
+  else if (r === 270) parts.push('transpose=2');
+  if ($('vFlip').checked) parts.push('hflip');
+  const sp = editSpeed();
+  if (sp !== 1) parts.push(`setpts=PTS/${sp}`);
+  return parts.length ? parts.join(',') + ',' : '';
+}
+
+function musicChain(outSeconds) {
+  let c = `volume=${(num('musicVol', 100) / 100).toFixed(2)}`;
+  if ($('musFadeIn').checked) c += ',afade=t=in:st=0:d=1.5';
+  if ($('musFadeOut').checked && outSeconds > 4) {
+    c += `,afade=t=out:st=${(outSeconds - 2).toFixed(2)}:d=2`;
+  }
+  return c;
+}
+
 async function processPhotoWithMusic() {
   const { q } = dims();
   const seconds = Math.max(3, Math.min(60, num('photoDur', 30)));
@@ -337,24 +465,24 @@ async function processPhotoWithMusic() {
   const photo = await renderPhoto(state.media, true);
   setStatus('Memuat mesin video (sekali saja)…', 5);
   const f = await getFFmpeg();
-  const musName = 'music.' + extOf(state.music, 'mp3');
+  const musKey = 'music.' + extOf(state.music, 'mp3');
   await writeInput(f, 'photo.jpg', photo);
-  await writeInput(f, musName, state.music);
-  const vol = (num('musicVol', 100) / 100).toFixed(2);
+  const musPath = await mountInput(f, state.music, musKey);
   const args = [
     '-loop', '1', '-framerate', String(PHOTO_FPS), '-i', 'photo.jpg',
-    '-stream_loop', '-1', '-ss', String(Math.max(0, num('musicStart', 0))), '-i', musName,
-    '-filter_complex', `[0:v]format=yuv420p[v];[1:a]volume=${vol}[a]`,
+    '-stream_loop', '-1', '-ss', String(Math.max(0, num('musicStart', 0))), '-i', musPath,
+    '-filter_complex', `[0:v]format=yuv420p[v];[1:a]${musicChain(seconds)}[a]`,
     '-map', '[v]', '-map', '[a]',
     ...encodeArgs(q, seconds, ['-tune', 'stillimage', '-r', String(PHOTO_FPS)]),
   ];
   try {
-    await assertHasAudio(f, musName);
+    await assertHasAudio(f, musPath);
     const code = await run(f, args, seconds);
     if (code !== 0) throw ffmpegError();
     return await readOutput(f);
   } finally {
-    await cleanup(f, ['photo.jpg', musName, 'out.mp4']);
+    await cleanup(f, ['photo.jpg', 'out.mp4']);
+    await unmountInput(f, musKey);
   }
 }
 
@@ -364,78 +492,89 @@ async function processVideo() {
   const start = Math.max(0, num('start', 0));
   const available = state.duration > 0 ? Math.max(0.5, state.duration - start) : Infinity;
   const seconds = Math.max(0.5, Math.min(num('dur', 30), available));
+  const sp = editSpeed();
+  const outSeconds = seconds / sp;
 
   setStatus('Memuat mesin video (sekali saja)…', 2);
   const f = await getFFmpeg();
-  const inName = 'input.' + extOf(state.media, 'mp4');
-  const musName = state.music ? 'music.' + extOf(state.music, 'mp3') : null;
+  const inKey = 'input.' + extOf(state.media, 'mp4');
+  const musKey = state.music ? 'music.' + extOf(state.music, 'mp3') : null;
   setStatus('Membaca video…', 4);
-  await writeInput(f, inName, state.media);
-  if (musName) await writeInput(f, musName, state.music);
+  const inPath = await mountInput(f, state.media, inKey);
+  const musPath = musKey ? await mountInput(f, state.music, musKey) : null;
   const textName = burnsText() ? 'text.png' : null;
   if (textName) await writeInput(f, textName, await makeTextPng(videoOutWidth()));
 
   try {
-    if (musName) await assertHasAudio(f, musName);
+    if (musPath) await assertHasAudio(f, musPath);
     // Probe: ffmpeg exits non-zero here by design, only the log matters.
-    await run(f, ['-hide_banner', '-i', inName], 0);
+    await run(f, ['-hide_banner', '-i', inPath], 0);
     const hasAudio = logTail.some((l) => /Stream #0:\d+.*Audio:/.test(l));
     if (!logTail.some((l) => /Stream #0:\d+.*Video:/.test(l))) {
       throw new Error('File ini tidak berisi video yang bisa dibaca.');
     }
 
-    let vf;
+    let vf = geometryFilters();
     if (mode === 'fit') {
-      vf = `scale=${W}:${H}:force_original_aspect_ratio=decrease:flags=lanczos,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2`;
+      vf += `scale=${W}:${H}:force_original_aspect_ratio=decrease:flags=lanczos,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2`;
     } else if (mode === 'crop') {
-      vf = `scale=${W}:${H}:force_original_aspect_ratio=increase:flags=lanczos,crop=${W}:${H}`;
+      vf += `scale=${W}:${H}:force_original_aspect_ratio=increase:flags=lanczos,crop=${W}:${H}`;
     } else {
-      vf = `scale='min(${H},iw)':'min(${H},ih)':force_original_aspect_ratio=decrease:force_divisible_by=2:flags=lanczos`;
+      vf += `scale='min(${H},iw)':'min(${H},ih)':force_original_aspect_ratio=decrease:force_divisible_by=2:flags=lanczos`;
     }
     vf += ',setsar=1,format=yuv420p' + fxFilters();
 
-    const subLines = subsForClip(start, seconds);
+    // Captions follow the video clock, so speed changes rescale them; captions
+    // made from the song are on the song's clock, which is never sped up.
+    const subLines = subsForClip(start, seconds).map((l) => (state.subSource === 'video'
+      ? { s: l.s / sp, e: l.e / sp, text: l.text } : l));
     if (subLines.length) {
       await writeSubtitleFiles(f, subLines);
       vf += ',ass=subs.ass:fontsdir=fonts';
     }
 
-    const mv = (num('musicVol', 100) / 100).toFixed(2);
-    const ovNum = musName ? num('origVol', 0) / 100 : 1;
-    const ov = ovNum.toFixed(2);
+    const ovNum = musPath ? num('origVol', 0) / 100 : 1;
     const keepOrig = hasAudio && ovNum > 0;
+    const orig = (sp !== 1 ? `atempo=${sp},` : '') + `volume=${ovNum.toFixed(2)}`;
 
     let af = '';
-    if (musName && keepOrig) {
-      af = `;[0:a]volume=${ov}[a0];[1:a]volume=${mv}[a1];` +
+    if (musPath && keepOrig) {
+      af = `;[0:a]${orig}[a0];[1:a]${musicChain(outSeconds)}[a1];` +
         '[a0][a1]amix=inputs=2:duration=longest:dropout_transition=0:normalize=0[a]';
-    } else if (musName) {
-      af = `;[1:a]volume=${mv}[a]`;
+    } else if (musPath) {
+      af = `;[1:a]${musicChain(outSeconds)}[a]`;
     } else if (keepOrig) {
-      af = ';[0:a]anull[a]';
+      af = `;[0:a]${orig}[a]`;
     }
 
-    const args = ['-ss', String(start), '-t', String(seconds), '-i', inName];
-    if (musName) {
-      args.push('-stream_loop', '-1', '-ss', String(Math.max(0, num('musicStart', 0))), '-i', musName);
+    const args = ['-ss', String(start), '-t', String(seconds), '-i', inPath];
+    if (musPath) {
+      args.push('-stream_loop', '-1', '-ss', String(Math.max(0, num('musicStart', 0))), '-i', musPath);
     }
-    let vchain = `[0:v]${vf}[v]`;
+    let vchain = `[0:v]${vf}[vb]`;
     if (textName) {
       args.push('-i', textName);
       const pos = $('textPos').value;
       const y = pos === 'atas' ? 'H*0.08' : pos === 'tengah' ? '(H-h)/2' : 'H-h-H*0.12';
-      vchain = `[0:v]${vf}[base];[base][${musName ? 2 : 1}:v]overlay=(W-w)/2:${y}[v]`;
+      vchain = `[0:v]${vf}[base];[base][${musPath ? 2 : 1}:v]overlay=(W-w)/2:${y}[vb]`;
+    }
+    if ($('vFade').checked && outSeconds > 1.5) {
+      vchain += `;[vb]fade=t=in:st=0:d=0.4,fade=t=out:st=${(outSeconds - 0.5).toFixed(2)}:d=0.5[v]`;
+    } else {
+      vchain += ';[vb]null[v]';
     }
     args.push('-filter_complex', vchain + af, '-map', '[v]');
     args.push(...(af ? ['-map', '[a]'] : ['-an']));
-    args.push(...encodeArgs(q, seconds, ['-fpsmax', String(waProfile().fps)]));
+    args.push(...encodeArgs(q, outSeconds, ['-fpsmax', String(waProfile().fps)]));
 
     setStatus('Memproses… 0%', 5);
-    const code = await run(f, args, seconds);
+    const code = await run(f, args, outSeconds);
     if (code !== 0) throw ffmpegError();
     return await readOutput(f);
   } finally {
-    await cleanup(f, [inName, musName, textName, 'subs.ass', 'out.mp4'].filter(Boolean));
+    await cleanup(f, [textName, 'subs.ass', 'out.mp4'].filter(Boolean));
+    await unmountInput(f, inKey);
+    if (musKey) await unmountInput(f, musKey);
   }
 }
 
@@ -467,9 +606,11 @@ async function onProcess() {
   setStatus('Mulai…', 0);
   try {
     let file;
-    if (state.kind === 'video') file = await processVideo();
-    else if (state.music) file = await processPhotoWithMusic();
-    else file = await processPhotoOnly();
+    file = await withEngineFallback(() => {
+      if (state.kind === 'video') return processVideo();
+      if (state.music) return processPhotoWithMusic();
+      return processPhotoOnly();
+    });
     showResult(file);
     setStatus('Selesai.', 100);
   } catch (err) {

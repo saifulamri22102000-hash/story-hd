@@ -42,7 +42,7 @@ async function makeTestVersions() {
       const [id, label] = TEST_SET[i];
       $('waProfile').value = id;
       setStatus(`Membuat versi uji ${i + 1} dari ${TEST_SET.length}…`, (i / TEST_SET.length) * 100);
-      const out = await processVideo();
+      const out = await withEngineFallback(processVideo);
       files.push(new File([out], `StoryHD_uji_${label}.mp4`, { type: 'video/mp4' }));
     }
     setStatus('Versi uji siap.', 100);

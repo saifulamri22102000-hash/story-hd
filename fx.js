@@ -23,7 +23,16 @@ function fxParams(id) {
   const preset = FX.find((f) => f.id === (id || state.fx)) || FX[0];
   const k = id ? 1 : num('fxAmount', 100) / 100;
   const mix = (v) => 1 + (v - 1) * k;
-  return { sharp: preset.sharp * k, c: mix(preset.c), s: mix(preset.s), b: mix(preset.b), warm: preset.warm * k };
+  const p = { sharp: preset.sharp * k, c: mix(preset.c), s: mix(preset.s), b: mix(preset.b), warm: preset.warm * k };
+  if (id) return p; // effect thumbnails show the preset alone
+  // Manual fine-tuning (edit.js) stacks on top of the chosen preset.
+  const adj = (name) => num(name, 0) / 100;
+  p.b *= 1 + adj('adjBright');
+  p.c *= 1 + adj('adjContrast');
+  p.s = Math.max(0, p.s * (1 + adj('adjSat')));
+  p.warm += adj('adjWarm');
+  p.sharp += adj('adjSharp');
+  return p;
 }
 
 function fxIsIdentity(p) {
