@@ -2,15 +2,16 @@
 // WhatsApp Status settings UI and the "3 test versions" helper.
 
 const WA_HINTS = {
+  jernih: 'File paling tajam: 1080p tanpa dipadatkan. Terlihat jernih di galeri; di Status WhatsApp tetap dikompres oleh WhatsApp.',
   aman: 'Mendekati ukuran yang dipakai WhatsApp sendiri, jadi kompresi ulangnya paling sedikit mengubah video.',
   ringan: 'Bitrate rendah. Lebih kecil peluang dikompres berat, tapi detail halus sedikit berkurang.',
   maks: 'File sebesar mungkin (≤16 MB). Bagus untuk disimpan atau dikirim sebagai dokumen; di Status tetap dikompres WhatsApp.',
   manual: 'Atur sendiri. Coba dengan “Buat 3 versi uji” untuk membandingkan.',
 };
 const TEST_SET = [
-  ['aman', 'A_aman_2Mbps'],
-  ['ringan', 'B_antikompres_1.2Mbps'],
-  ['maks', 'C_maksimal'],
+  ['jernih', 'A_jernih_1080p'],
+  ['aman', 'B_aman_2Mbps'],
+  ['ringan', 'C_antikompres_1.2Mbps'],
 ];
 
 function syncWaUi() {

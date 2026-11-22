@@ -301,6 +301,10 @@ function videoBitrate(q, seconds) {
    encoder produces is changed least by its pass. "maks" keeps the old
    quality-first behaviour, "manual" exposes every knob for the user's own tests. */
 const WA_PROFILES = {
+  // Default. The user's own test showed WhatsApp re-encodes every profile to
+  // the same result, so the saved file itself should be as sharp as possible:
+  // full 1080p, near-transparent quality, no 16 MB squeeze.
+  jernih: { short: 1080, fps: 30, kbps: 0, profile: 'high', crf: 17, cap: 12000 },
   aman: { short: 720, fps: 30, kbps: 2000, profile: 'main' },
   ringan: { short: 720, fps: 30, kbps: 1200, profile: 'main' },
   maks: { short: 0, fps: 30, kbps: 0, profile: 'high' },
@@ -316,7 +320,7 @@ function waProfile() {
       profile: $('mProf').value === 'high' ? 'high' : 'main',
     };
   }
-  return WA_PROFILES[id] || WA_PROFILES.aman;
+  return WA_PROFILES[id] || WA_PROFILES.jernih;
 }
 
 function encodeArgs(q, seconds, extra) {
@@ -328,6 +332,9 @@ function encodeArgs(q, seconds, extra) {
     const vb = Math.max(500, Math.min(p.kbps, fit));
     rate = ['-preset', 'fast', '-b:v', vb + 'k', '-maxrate', Math.round(vb * 1.25) + 'k',
       '-bufsize', vb * 2 + 'k'];
+  } else if (p.crf) {
+    rate = ['-preset', 'veryfast', '-crf', String(p.crf),
+      '-maxrate', p.cap + 'k', '-bufsize', p.cap * 2 + 'k'];
   } else {
     const vb = videoBitrate(q, seconds);
     rate = ['-preset', 'veryfast', '-crf', q === 1080 ? '19' : '18',
@@ -640,8 +647,7 @@ function showResult(file) {
   $('outImg').hidden = isVideo;
   $('outVid').hidden = !isVideo;
   (isVideo ? $('outVid') : $('outImg')).src = state.outUrl;
-  $('outInfo').textContent = `${file.name} · ${fmtSize(file.size)}` +
-    (file.size > 16 * 1048576 ? ' · di atas 16 MB, WhatsApp mungkin mengompres ulang' : '');
+  $('outInfo').textContent = `${file.name} · ${fmtSize(file.size)}`;
   $('downloadBtn').href = state.outUrl;
   $('downloadBtn').download = file.name;
   const canShare = !!(navigator.canShare && navigator.canShare({ files: [file] }));
