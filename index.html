@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=13">
 </head>
 <body>
 <div id="splash" aria-hidden="true">
@@ -66,10 +66,11 @@
     <div class="row">
       <label for="quality">Kualitas</label>
       <select id="quality">
-        <option value="720">HD 720p (cepat, disarankan)</option>
-        <option value="1080">Full HD 1080p (lebih lama)</option>
+        <option value="720">HD 720p · khusus WhatsApp (disarankan)</option>
+        <option value="1080">Full HD 1080p · simpan / kirim dokumen</option>
       </select>
     </div>
+    <p class="hint">WhatsApp selalu mengecilkan video ke 720p. Pilih 720p supaya kita yang mengecilkan dengan kualitas tinggi, bukan WhatsApp.</p>
     <div class="row">
       <label for="mode">Bentuk</label>
       <select id="mode">
@@ -305,15 +306,18 @@
     <ul>
       <li>Di WhatsApp buka <b>Setelan → Penyimpanan dan data → Kualitas unggahan media</b>, pilih <b>Kualitas HD</b>.</li>
       <li>Saat mengirim di chat, ketuk ikon <b>HD</b> sebelum mengirim.</li>
+      <li>Jika di layar Status muncul ikon <b>HD</b>, ketuk sampai aktif sebelum mengirim.</li>
+      <li>Jangan potong, tambah stiker, atau teks di editor WhatsApp. Setiap edit di sana membuat WhatsApp mengompres ulang. Lakukan semuanya di aplikasi ini.</li>
+      <li>Gunakan video asli dari kamera / ekspor CapCut 1080p. Video yang sudah buram dari sumbernya tidak bisa jadi tajam sempurna.</li>
       <li>Untuk hasil tanpa kompresi sama sekali, kirim di chat sebagai <b>Dokumen</b>.</li>
     </ul>
   </section>
 </main>
 <script src="vendor/ffmpeg/ffmpeg.js"></script>
-<script src="app.js"></script>
-<script src="features.js"></script>
-<script src="fx.js"></script>
-<script src="share.js"></script>
+<script src="app.js?v=13"></script>
+<script src="features.js?v=13"></script>
+<script src="fx.js?v=13"></script>
+<script src="share.js?v=13"></script>
 <div id="toast" role="status" hidden></div>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <filter id="fxSvg" color-interpolation-filters="sRGB">

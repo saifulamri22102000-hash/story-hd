@@ -165,8 +165,15 @@ function fxFilters() {
   if (Math.abs(p.warm) >= 0.005) {
     f += `,colorbalance=rm=${(0.1 * p.warm).toFixed(3)}:bm=${(-0.1 * p.warm).toFixed(3)}`;
   }
+  // Measured against a simulated WhatsApp re-encode: removing sensor noise
+  // first keeps more real detail, while strong sharpening amplifies noise and
+  // WhatsApp then turns it into blocks. So denoise, then sharpen only lightly.
+  if (p.sharp >= 0.01) {
+    const dn = Math.min(1.5, p.sharp);
+    f = `,hqdn3d=${(3 * dn).toFixed(1)}:${(2 * dn).toFixed(1)}:${(4 * dn).toFixed(1)}:${(3 * dn).toFixed(1)}` + f;
+  }
   f += `,eq=contrast=${p.c.toFixed(3)}:saturation=${p.s.toFixed(3)}:brightness=${((p.b - 1) * 0.5).toFixed(3)}`;
-  if (p.sharp >= 0.01) f += `,unsharp=5:5:${Math.min(1.5, p.sharp).toFixed(2)}:5:5:0`;
+  if (p.sharp >= 0.01) f += `,unsharp=5:5:${Math.min(0.6, p.sharp * 0.35).toFixed(2)}:5:5:0`;
   return f + ',format=yuv420p';
 }
 

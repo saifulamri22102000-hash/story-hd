@@ -191,8 +191,11 @@ async function assertHasAudio(f, name) {
   }
 }
 
+// WhatsApp re-encodes everything it receives. The cleaner and sharper the file
+// it gets, the less its own pass smears, so spend bits generously (within the
+// 16 MB limit) and keep fine detail: adaptive quantisation and light deblocking.
 function videoBitrate(q, seconds) {
-  const cap = q === 1080 ? 6000 : 3500;
+  const cap = q === 1080 ? 8000 : 5000;
   const fit = Math.floor((MAX_BYTES * 8) / 1000 / seconds - AUDIO_KBPS - 16);
   return Math.max(700, Math.min(cap, fit));
 }
@@ -201,8 +204,10 @@ function encodeArgs(q, seconds, extra) {
   const vb = videoBitrate(q, seconds);
   return [
     '-t', String(seconds),
-    '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '21',
+    '-c:v', 'libx264', '-preset', 'veryfast', '-crf', q === 1080 ? '19' : '18',
     '-maxrate', vb + 'k', '-bufsize', vb * 2 + 'k',
+    '-x264-params', 'aq-mode=3:deblock=-1,-1',
+    '-g', '60', '-keyint_min', '30',
     '-profile:v', 'high', '-level', '4.1', '-pix_fmt', 'yuv420p',
     ...extra,
     '-c:a', 'aac', '-b:a', AUDIO_KBPS + 'k', '-ar', '44100', '-ac', '2',
@@ -346,11 +351,11 @@ async function processVideo() {
 
     let vf;
     if (mode === 'fit') {
-      vf = `scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2`;
+      vf = `scale=${W}:${H}:force_original_aspect_ratio=decrease:flags=lanczos,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2`;
     } else if (mode === 'crop') {
-      vf = `scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H}`;
+      vf = `scale=${W}:${H}:force_original_aspect_ratio=increase:flags=lanczos,crop=${W}:${H}`;
     } else {
-      vf = `scale='min(${H},iw)':'min(${H},ih)':force_original_aspect_ratio=decrease:force_divisible_by=2`;
+      vf = `scale='min(${H},iw)':'min(${H},ih)':force_original_aspect_ratio=decrease:force_divisible_by=2:flags=lanczos`;
     }
     vf += ',setsar=1,format=yuv420p' + fxFilters();
 
